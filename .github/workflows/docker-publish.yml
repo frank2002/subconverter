@@ -11,9 +11,6 @@ concurrency:
   group: ${{ github.ref }}-docker-publish
   cancel-in-progress: true
 
-env:
-  REGISTRY_IMAGE: frank2002/subconverter
-
 jobs:
   build:
     name: Build ${{ matrix.platform }}
@@ -49,7 +46,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY_IMAGE }}
+          images: ${{ secrets.DOCKER_USERNAME }}/subconverter
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -64,7 +61,7 @@ jobs:
           file: ./Dockerfile
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
-          outputs: type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=${{ secrets.DOCKER_USERNAME }}/subconverter,push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=${{ matrix.platform_pair }}
           cache-to: type=gha,mode=max,scope=${{ matrix.platform_pair }}
 
@@ -101,7 +98,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY_IMAGE }}
+          images: ${{ secrets.DOCKER_USERNAME }}/subconverter
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -119,8 +116,8 @@ jobs:
         run: |
           docker buildx imagetools create \
             $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
+            $(printf '${{ secrets.DOCKER_USERNAME }}/subconverter@sha256:%s ' *)
 
       - name: Inspect final image
         run: |
-          docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.meta.outputs.version }}
+          docker buildx imagetools inspect ${{ secrets.DOCKER_USERNAME }}/subconverter:${{ steps.meta.outputs.version }}
